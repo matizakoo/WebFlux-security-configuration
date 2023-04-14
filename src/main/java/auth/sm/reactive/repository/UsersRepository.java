@@ -2,6 +2,7 @@ package auth.sm.reactive.repository;
 
 import auth.sm.reactive.domain.Users;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
@@ -10,4 +11,6 @@ public interface UsersRepository extends ReactiveMongoRepository<Users, String> 
     Mono save (Users users);
 
     Mono<Users> findByUsername(String username);
+
+//    Mono<UserDetails> findByUsername(String username);
 }

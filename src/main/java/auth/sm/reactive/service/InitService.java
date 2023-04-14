@@ -8,14 +8,16 @@ import auth.sm.reactive.repository.UsersRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 @Service
 @AllArgsConstructor
 public class InitService {
-    private TestRepository testRepository;
-    private UsersRepository usersRepository;
+    private final TestRepository testRepository;
+    private final UsersRepository usersRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @EventListener(ApplicationReadyEvent.class)
     public void save() {
@@ -33,12 +35,12 @@ public class InitService {
                 .deleteAll()
                 .thenMany(Flux.just(Users.builder()
                                 .username("mati")
-                                .password("$2a$12$fipL49oU8LK./SfA0Sh/WeM55WdZ6BKuLFQPWfmdFKPMJa7iw0Qk6")
+                                .password(passwordEncoder.encode("mati"))
                                 .role("USER")
                                 .build(),
                         Users.builder()
                                 .username("admin")
-                                .password("$2a$12$EyQr2l6ihfAbid9kzvb7EOH09SyHN98XQsX.N4YlvrTZQ0Ot.zES6")
+                                .password(passwordEncoder.encode("admin"))
                                 .role("ADMIN")
                                 .build()
                         ))

@@ -1,21 +1,26 @@
 package auth.sm.reactive.config;
 
+import auth.sm.reactive.controller.AuthController;
 import auth.sm.reactive.domain.Users;
 import auth.sm.reactive.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import reactor.core.publisher.Mono;
 
 @EnableReactiveMethodSecurity
@@ -25,6 +30,7 @@ public class SecurityConfig {
     @Autowired
     private UsersRepository usersRepository;
 
+    //in memory auth
 //    @Bean
 //    public MapReactiveUserDetailsService mapReactiveUserDetailsService() {
 //        UserDetails userDetails = User.withDefaultPasswordEncoder().username("mati1").password("mati1").roles("USER").build();
@@ -32,18 +38,38 @@ public class SecurityConfig {
 //        return new MapReactiveUserDetailsService(userDetails, userDetails2);
 //    }
 
+//    @Bean
+//    @Order(Ordered.HIGHEST_PRECEDENCE)
+//    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+//        return http
+//                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+//                .authorizeExchange(e -> e
+//                        .pathMatchers("/acc").permitAll()
+//                        .pathMatchers("/user").hasAnyRole("USER", "ADMIN")
+//                        .pathMatchers("/admin").hasRole("ADMIN")
+//                )
+//                .httpBasic(Customizer.withDefaults())
+//                .build();
+//    }
+
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityWebFilterChain securityWebFilterChainJwt(ServerHttpSecurity http, AuthConverter jwtAuthConverter, AuthManager jwtAuthManager) {
+        AuthenticationWebFilter jwtFilter = new AuthenticationWebFilter(jwtAuthManager);
+        jwtFilter.setServerAuthenticationConverter(jwtAuthConverter);
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(e -> e
-                        .pathMatchers("/acc").permitAll()
-                        .pathMatchers("/user").hasAnyRole("USER", "ADMIN")
-                        .pathMatchers("/admin").hasRole("ADMIN")
-                )
-                .httpBasic(Customizer.withDefaults())
+                .authorizeExchange(auth -> {
+                    auth.pathMatchers(AuthController.url + "/login").permitAll();
+                    auth.pathMatchers(AuthController.url + "/auth").permitAll();
+                    auth.pathMatchers(AuthController.url + "/loginpage").permitAll();
+                    auth.anyExchange().permitAll();
+                })
+                .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .httpBasic().disable()
+                .formLogin().disable()
+                .csrf().disable()
                 .build();
+
     }
 
     @Bean
