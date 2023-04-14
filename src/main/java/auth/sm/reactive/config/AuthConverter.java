@@ -13,7 +13,7 @@ public class AuthConverter implements ServerAuthenticationConverter {
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         return Mono.justOrEmpty(exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION))
-                .filter(filter -> filter.startsWith("Bearer "))
+                .filter(filter -> filter.startsWith("Bearer"))
                 .map(filter -> filter.substring(7))
                 .map(filter -> new BearerToken(filter));
     }
