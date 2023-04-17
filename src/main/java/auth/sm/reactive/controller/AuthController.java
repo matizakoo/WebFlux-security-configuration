@@ -66,6 +66,7 @@ public class AuthController {
 
     @PostMapping(value = "/auth")
     public Mono<ResponseEntity<?>> authnew(@RequestBody ReqLogin user, ServerHttpResponse response) {
+        System.out.println(user.getUsername() + " " + user.getPassword());
         Mono<UserDetails> foundUser = ownUserDetailsService.findByUsername(user.getUsername());
         return foundUser.flatMap(u -> {
             if (u != null) {

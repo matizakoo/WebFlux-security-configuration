@@ -3,6 +3,8 @@ package auth.sm.reactive.config;
 import auth.sm.reactive.controller.AuthController;
 import auth.sm.reactive.domain.Users;
 import auth.sm.reactive.repository.UsersRepository;
+import auth.sm.reactive.service.JWTService;
+import auth.sm.reactive.service.OwnUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -29,6 +31,10 @@ public class SecurityConfig {
 
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private JWTService jwtService;
+    @Autowired
+    private OwnUserDetailsService ownUserDetailsService;
 
     //in memory auth
 //    @Bean
@@ -53,23 +59,29 @@ public class SecurityConfig {
 //    }
 
     @Bean
-    @Order(1)
     public SecurityWebFilterChain securityWebFilterChainJwt(ServerHttpSecurity http, AuthConverter jwtAuthConverter, AuthManager jwtAuthManager) {
-        AuthenticationWebFilter jwtFilter = new AuthenticationWebFilter(jwtAuthManager);
-        jwtFilter.setServerAuthenticationConverter(jwtAuthConverter);
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        JwtReactiveAuthenticationManager jwtReactiveAuthenticationManager = new JwtReactiveAuthenticationManager(ownUserDetailsService, jwtService);
         return http
                 .authorizeExchange(auth -> {
                     auth.pathMatchers(AuthController.url + "/login").permitAll();
                     auth.pathMatchers(AuthController.url + "/auth").permitAll();
                     auth.pathMatchers(AuthController.url + "/loginpage").permitAll();
-                    auth.anyExchange().permitAll();
+                    auth.pathMatchers("/acc").hasRole("USER");  //works
+                    auth.pathMatchers("/admin/test").hasRole("ADMIN");  //works
+                    auth.anyExchange().authenticated();
                 })
-                .addFilterAt(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+                .addFilterAt(authenticationWebFilter(jwtAuthenticationConverter, jwtReactiveAuthenticationManager), SecurityWebFiltersOrder.AUTHENTICATION)
                 .httpBasic().disable()
                 .formLogin().disable()
                 .csrf().disable()
                 .build();
+    }
 
+    private AuthenticationWebFilter authenticationWebFilter(JwtAuthenticationConverter jwtAuthenticationConverter, JwtReactiveAuthenticationManager jwtReactiveAuthenticationManager) {
+        AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(jwtReactiveAuthenticationManager);
+        authenticationWebFilter.setServerAuthenticationConverter(jwtAuthenticationConverter);
+        return authenticationWebFilter;
     }
 
     @Bean
