@@ -33,11 +33,19 @@ public class AuthController {
     private final JWTService jwtService;
     private final OwnUserDetailsService ownUserDetailsService;
 
-    @GetMapping("/test")
+    @GetMapping("/test1")
     public Mono<ResponseEntity<ReqRespModel<String>>> auth() {
         return Mono.just(
                 ResponseEntity.ok(
-                        new ReqRespModel<>("Hello in JWT :) ", "")
+                        new ReqRespModel<>("Hello in JWT :) user", "")
+                ));
+    }
+
+    @GetMapping("/test2")
+    public Mono<ResponseEntity<ReqRespModel<String>>> authAdmin() {
+        return Mono.just(
+                ResponseEntity.ok(
+                        new ReqRespModel<>("Hello in JWT :) admin", "")
                 ));
     }
 

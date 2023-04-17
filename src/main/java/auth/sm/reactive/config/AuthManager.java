@@ -19,7 +19,6 @@ import java.util.Collection;
 @AllArgsConstructor
 public class AuthManager implements ReactiveAuthenticationManager {
     private final JWTService jwtService;
-    private final ReactiveUserDetailsService users;
     private final OwnUserDetailsService ownUserDetailsService;
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {

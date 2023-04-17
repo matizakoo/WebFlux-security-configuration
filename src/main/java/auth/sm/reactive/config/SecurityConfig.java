@@ -1,10 +1,12 @@
 package auth.sm.reactive.config;
 
 import auth.sm.reactive.controller.AuthController;
+import auth.sm.reactive.controller.BasicController;
 import auth.sm.reactive.domain.Users;
 import auth.sm.reactive.repository.UsersRepository;
 import auth.sm.reactive.service.JWTService;
 import auth.sm.reactive.service.OwnUserDetailsService;
+import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -23,6 +25,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @EnableReactiveMethodSecurity
@@ -36,47 +43,42 @@ public class SecurityConfig {
     @Autowired
     private OwnUserDetailsService ownUserDetailsService;
 
-    //in memory auth
-//    @Bean
-//    public MapReactiveUserDetailsService mapReactiveUserDetailsService() {
-//        UserDetails userDetails = User.withDefaultPasswordEncoder().username("mati1").password("mati1").roles("USER").build();
-//        UserDetails userDetails2 = User.withDefaultPasswordEncoder().username("admin1").password("admin1").roles("ADMIN").build();
-//        return new MapReactiveUserDetailsService(userDetails, userDetails2);
-//    }
-
-//    @Bean
-//    @Order(Ordered.HIGHEST_PRECEDENCE)
-//    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-//        return http
-//                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-//                .authorizeExchange(e -> e
-//                        .pathMatchers("/acc").permitAll()
-//                        .pathMatchers("/user").hasAnyRole("USER", "ADMIN")
-//                        .pathMatchers("/admin").hasRole("ADMIN")
-//                )
-//                .httpBasic(Customizer.withDefaults())
-//                .build();
-//    }
+    @Bean
+    @Order(1)
+    public SecurityWebFilterChain securityWebFilterChainBasic(ServerHttpSecurity http) {
+        return http
+                .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/basic/**"))
+                .authorizeExchange(authorize -> authorize
+                        .pathMatchers(BasicController.url + "/test1").permitAll()
+                        .pathMatchers(BasicController.url + "/test2").hasRole("USER")
+                        .pathMatchers(BasicController.url + "/test3").hasRole("ADMIN")
+                        .anyExchange().permitAll()
+                )
+                .httpBasic(Customizer.withDefaults())
+                .authenticationManager(authenticationManager())
+                .build();
+    }
 
     @Bean
-    public SecurityWebFilterChain securityWebFilterChainJwt(ServerHttpSecurity http, AuthConverter jwtAuthConverter, AuthManager jwtAuthManager) {
+    @Order(2)
+    public SecurityWebFilterChain securityWebFilterChainJwt(ServerHttpSecurity http) {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         JwtReactiveAuthenticationManager jwtReactiveAuthenticationManager = new JwtReactiveAuthenticationManager(ownUserDetailsService, jwtService);
         return http
-                .authorizeExchange(auth -> {
-                    auth.pathMatchers(AuthController.url + "/login").permitAll();
-                    auth.pathMatchers(AuthController.url + "/auth").permitAll();
-                    auth.pathMatchers(AuthController.url + "/loginpage").permitAll();
-                    auth.pathMatchers("/acc").hasRole("USER");  //works
-                    auth.pathMatchers("/admin/test").hasRole("ADMIN");  //works
-                    auth.anyExchange().authenticated();
-                })
+                .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/admin/**"))
+                .authorizeExchange(authorize -> authorize
+                        .pathMatchers(AuthController.url + "/login", AuthController.url + "/auth", AuthController.url + "/loginpage").permitAll()
+                        .pathMatchers(AuthController.url + "/test1").hasRole("USER")
+                        .pathMatchers(AuthController.url + "/test2").hasRole("ADMIN")
+                        .anyExchange().authenticated()
+                )
                 .addFilterAt(authenticationWebFilter(jwtAuthenticationConverter, jwtReactiveAuthenticationManager), SecurityWebFiltersOrder.AUTHENTICATION)
                 .httpBasic().disable()
                 .formLogin().disable()
                 .csrf().disable()
                 .build();
     }
+
 
     private AuthenticationWebFilter authenticationWebFilter(JwtAuthenticationConverter jwtAuthenticationConverter, JwtReactiveAuthenticationManager jwtReactiveAuthenticationManager) {
         AuthenticationWebFilter authenticationWebFilter = new AuthenticationWebFilter(jwtReactiveAuthenticationManager);
