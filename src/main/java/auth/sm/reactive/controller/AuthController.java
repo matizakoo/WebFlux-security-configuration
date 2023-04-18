@@ -101,9 +101,23 @@ public class AuthController {
         });
     }
 
-    @GetMapping("/z")
+    @GetMapping("/logout")
+    public Mono<Void> logout(ServerWebExchange exchange) {
+        System.out.println("/logoa");
+        ResponseCookie cookie = ResponseCookie.from("Bearer-", null)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
+
+        exchange.getResponse().addCookie(cookie);
+        return Mono.empty();
+    }
+
+    @GetMapping("/test")
     public Mono<ResponseEntity<?>> da() {
-        return Mono.just(ResponseEntity.ok("da"));
+        return Mono.just(ResponseEntity.ok("authenticated, have a nice day"));
     }
 
     @GetMapping("/loginpage")
@@ -152,27 +166,4 @@ public class AuthController {
                 "</body>\n" +
                 "</html>"));
     }
-
-//    @GetMapping("/loginpage")
-//    public Mono<ResponseEntity<?>> loginPage(){
-//        return Mono.just(ResponseEntity.ok("<!DOCTYPE html>\n" +
-//                "<html>\n" +
-//                "<head>\n" +
-//                "    <meta charset=\"UTF-8\"/>\n" +
-//                "    <title>Login</title>\n" +
-//                "</head>\n" +
-//                "<body>\n" +
-//                "hi helo\n" +
-//                "<form action=\"/admin/auth\" method=\"post\">\n" +
-//                "    <label for=\"username\">Username:</label>\n" +
-//                "    <input type=\"text\" id=\"username\" name=\"username\" required=\"required\" autofocus=\"autofocus\" />\n" +
-//                "    <br/>\n" +
-//                "    <label for=\"password\">Password:</label>\n" +
-//                "    <input type=\"password\" id=\"password\" name=\"password\" required=\"required\" />\n" +
-//                "    <br/>\n" +
-//                "    <button type=\"submit\">srititti</button>\n" +
-//                "</form>\n" +
-//                "</body>\n" +
-//                "</html>"));
-//    }
 }

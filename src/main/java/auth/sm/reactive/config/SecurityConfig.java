@@ -67,7 +67,11 @@ public class SecurityConfig {
         return http
                 .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/admin/**"))
                 .authorizeExchange(authorize -> authorize
-                        .pathMatchers(AuthController.url + "/login", AuthController.url + "/auth", AuthController.url + "/loginpage").permitAll()
+                        .pathMatchers(AuthController.url + "/login",
+                                AuthController.url + "/auth",
+                                AuthController.url + "/loginpage",
+                                AuthController.url + "/logout").permitAll()
+                        .pathMatchers(AuthController.url + "/test").hasAnyRole("USER", "ADMINx")
                         .pathMatchers(AuthController.url + "/test1").hasRole("USER")
                         .pathMatchers(AuthController.url + "/test2").hasRole("ADMIN")
                         .anyExchange().authenticated()
